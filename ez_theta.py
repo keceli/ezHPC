@@ -1,6 +1,8 @@
+# %load https://raw.githubusercontent.com/keceli/ezHPC/main/ez_theta.py
 
 def qstat(user='', jobid='', 
-          header='JobID:User:Score:WallTime:RunTime:Nodes:Queue:Est_Start_Time', 
+          header='JobID:User:Score:WallTime:RunTime:Nodes:Queue:Est_Start_Time',
+          extra='',
           verbose=False):
     """
     Query about jobs submitted to queue manager with `qstat`.
@@ -13,16 +15,24 @@ def qstat(user='', jobid='',
     """
     import os
     import getpass
+    cmd = ''
     if jobid:
         cmd = f'--header={header} {jobid}'
     else:
         if user == '':
             user = getpass.getuser() #user = '$(whoami)'
-        cmd = f'-u {user} --header={header}'
+            cmd = f'-u {user} --header={header}'
+        elif user.lower() == 'all':
+            cmd = f'--header={header}'
+        else:
+            cmd = f'-u {user} --header={header}'
     if verbose:
         cmd = f'qstat -f -l {cmd}'
     else:
         cmd = f'qstat {cmd}'
+    if extra:
+        cmd += ' ' + extra
+    print(f'Running {cmd} ...')
     stream = os.popen(cmd).read()
     if stream:
         print(stream)
@@ -37,7 +47,7 @@ def i_qstat():
     from ipywidgets import interact_manual, widgets
     import getpass
     im = interact_manual(qstat, user=getpass.getuser())
-    app_button = im.widget.children[4]
+    app_button = im.widget.children[5]
     app_button.description = 'qstat'
     return
 
