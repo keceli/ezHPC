@@ -172,13 +172,17 @@ def print_cobalt_times(prefix=''):
             print(f'{key}: {val}')
 
 def get_job_script(nodes=1, ranks_per_node=1, affinity='-d 1 -j 1 --cc depth', command='',verbose=True):
+    """
+    Returns Cobalt job script with the given parameters
+    TODO: add rules for affinity
+    """
     script = '#!/bin/bash -x \n'
     ranks  = ranks_per_node * nodes
     script += f'aprun -n {ranks} -N {ranks_per_node} {affinity} {command}'
     if verbose: print(script)
     return script
 
-def i_get_job_script():
+def i_get_job_script_manual():
     from ipywidgets import widgets, Layout, interact_manual
     from IPython.display import display, clear_output
     from os.path import isfile
@@ -189,7 +193,7 @@ def i_get_job_script():
     get_job_script_button.description = 'get_job_script'
     return
 
-def i_get_job_script2():
+def i_get_job_script():
     from ipywidgets import widgets, Layout, interact_manual
     from IPython.display import display, clear_output
     from os.path import isfile
@@ -203,7 +207,7 @@ def i_get_job_script2():
                                                       'command': icommand})
     box = widgets.VBox([widgets.VBox([inodes, iranks_per_node, iaffinity, icommand]), out])
     display(box)
-    return out
+    return
 
 def is_valid_theta_job(queue='', nodes=1, wall_minutes=10):
     """
@@ -310,6 +314,9 @@ def qsub(project='',
     return out.decode("utf-8")
 
 def i_qsub():
+    """
+    Submits a job to the queue with the given parameters.
+    """
     from ipywidgets import widgets, Layout, interact_manual
     from IPython.display import display, clear_output
     from os.path import isfile
@@ -334,7 +341,7 @@ def i_qsub():
                     tooltip='submit job',
                     icon='')
     output = widgets.Output()
-    i_get_job_script2()
+    i_get_job_script()
     display(iproject, inodes, iqueue, iwall_minutes, iscript_file, iscript, isubmit, output)
     jobid = ''
     def submit_clicked(b):
