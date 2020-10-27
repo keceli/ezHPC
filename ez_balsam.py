@@ -1,4 +1,3 @@
-
 def add_pgsql_path(path='/soft/datascience/balsam/pgsql/bin/'):
     """
     Add PostgreSQL directory to the path
@@ -96,7 +95,7 @@ def get_apps(verbose=True):
         if verbose:
             print(f'Found {len(apps)} apps in {os.environ["BALSAM_DB_PATH"]}:')
             for i,app in enumerate(apps):
-                print(f'{i}: {app.name} {app.cute_id}')
+                print(f'{i}: {app.name}')
         return apps
     except Exception as e:
         if 'could not connect to server' in str(e):
@@ -124,6 +123,22 @@ def get_apps(verbose=True):
             print('You may need to restart Balsam server on terminal')
             print(e,'\n')
         return None
+    
+def i_show_apps():
+    """
+    Show apps saved in the Balsam database
+    """
+    import os
+    from ipywidgets import widgets, Layout
+    from IPython.display import display, clear_output
+    children = [widgets.Textarea(value=str(app), layout=Layout(flex= '1 1 auto', width='400px',height='200px')) 
+                        for app in apps]
+    tab = widgets.Accordion(children=children,layout=Layout(flex= '1 1 auto', width='500px',height='auto'))
+    for i,app in enumerate(apps):
+        tab.set_title(i, app.name)
+    print(f'Apps in the Balsam database {os.environ["BALSAM_DB_PATH"]}:')
+    display(tab)
+    return
     
 def save_app(name, executable, description='', envscript='', preprocess='', postprocess=''):
     """
@@ -211,6 +226,7 @@ def i_delete_app():
             delete_app(iapps.value)
     idelete.on_click(delete_clicked)
     return   
+
 def save_job(name, workflow, application, description='', 
             args='', num_nodes=1, ranks_per_node=1,
             cpu_affinity='depth', data={}, environ_vars=''):
