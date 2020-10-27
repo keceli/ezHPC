@@ -39,13 +39,11 @@ def load_balsam():
         os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
         add_pgsql_path()
         check_pgsql()
-        print()
-        return True
     except Exception as e:
         print('🛑 Exception caught')
         print(e, '\n')
         print('Make sure Balsam is installed and you are using the right kernel/environment')
-        return False
+    return
     
 def get_databases(verbose=True):
     """
@@ -521,7 +519,7 @@ def submit_jobs(project='',queue='debug-cache-quad',nodes=1,
     mylaunch.job_mode = job_mode
     mylaunch.wf_filter = wf_filter
     mylaunch.prescheduled_only=False
-    if queue .startswith('debug'):
+    if queue.startswith('debug'):
         if wall_minutes > 60:
             validjob = False
             print(f'Max wall time for {queue} queue is 60 minutes')
