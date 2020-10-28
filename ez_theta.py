@@ -1,5 +1,5 @@
-# %load https://raw.githubusercontent.com/keceli/ezHPC/main/ez_theta.py
-
+#%%writefile ezHPC/ez_cobalt.py #Uncomment to write the file
+#%load https://raw.githubusercontent.com/keceli/ezHPC/main/ez_theta.py #Uncomment to load the file
 def qstat(user='', jobid='', 
           header='JobID:User:Score:WallTime:RunTime:Nodes:Queue:Est_Start_Time',
           extra='',
@@ -32,7 +32,7 @@ def qstat(user='', jobid='',
         cmd = f'qstat {cmd}'
     if extra:
         cmd += ' ' + extra
-    print(f'Running {cmd} ...')
+    print(f'Running...\n {cmd}\n')
     stream = os.popen(cmd).read()
     if stream:
         print(stream)
@@ -219,7 +219,7 @@ def i_get_job_script():
     display(box)
     return
 
-def is_valid_theta_job(queue='', nodes=1, wall_minutes=10):
+def validate_theta_job(queue='', nodes=1, wall_minutes=10):
     """
     Return True if given <queue> <nodes> <wall_minutes> are valid for a job on Theta,
     Return False and print the reason otherwise.
@@ -293,7 +293,7 @@ def qsub(project='',
     from subprocess import Popen, PIPE
     from os.path import isfile
 
-    valid = is_valid_theta_job(queue=queue, nodes=nodes, wall_minutes=wall_minutes)
+    valid = validate_theta_job(queue=queue, nodes=nodes, wall_minutes=wall_minutes)
     if not valid:
         print('Job is not valid, change queue, nodes, or wall_minutes.')
         return 0
@@ -351,7 +351,6 @@ def i_qsub():
                     tooltip='submit job',
                     icon='')
     output = widgets.Output()
-    i_get_job_script()
     display(iproject, inodes, iqueue, iwall_minutes, iscript_file, iscript, isubmit, output)
     jobid = ''
     def submit_clicked(b):
