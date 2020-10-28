@@ -64,18 +64,18 @@ def get_databases(verbose=True):
         print(e, '\n')
     return databasepaths 
     
-def activate_database(db=''):
+def select_database(db=''):
     """
-    Activates Balsam database by setting the BALSAM_DB_PATH environment variable.
+    Selects Balsam database by setting the BALSAM_DB_PATH environment variable.
     """
     import os
     os.environ["BALSAM_DB_PATH"] = db
     print(f'Selected database: {os.environ["BALSAM_DB_PATH"]}')
     return
     
-def i_activate_database():
+def i_select_database():
     """
-    Activates Balsam database by setting the index of BALSAM_DB_PATH environment variable
+    Selects Balsam database by setting the index of BALSAM_DB_PATH environment variable
     from the dropdown list.
     """
     from ipywidgets import interact
@@ -83,20 +83,24 @@ def i_activate_database():
     interact(activate_database,db=[(i,db) for i,db in enumerate(databasepaths)])
     return
 
-def get_apps(verbose=True):
+def activate_database(db='', verbose=True):
     """
-    Return apps in the balsam database. If verbose, print.
+    Activates Balsam database by setting the BALSAM_DB_PATH environment variable
+    and connecting to the Balsam server.
     """
-    from balsam.core.models import ApplicationDefinition as App
-    from balsam.scripts import postgres_control
     import os
+    from balsam.scripts import postgres_control
+
+    os.environ["BALSAM_DB_PATH"] = db
+    if verbose:
+        print(f'Selected database: {os.environ["BALSAM_DB_PATH"]}')
     try:
-        apps = App.objects.all()
+        postgres_control.start_main(os.environ["BALSAM_DB_PATH"])
         if verbose:
-            print(f'Found {len(apps)} apps in {os.environ["BALSAM_DB_PATH"]}:')
-            for i,app in enumerate(apps):
-                print(f'{i}: {app.name}')
-        return apps
+            serverinfo = os.environ["BALSAM_DB_PATH"] + '/server-info'
+            with open(serverinfo) as f:
+                info = f.read()
+                print(f'Server information: {info}')
     except Exception as e:
         if 'could not connect to server' in str(e):
             print('🛑 Server exception caught:')
@@ -120,17 +124,50 @@ def get_apps(verbose=True):
                     print('Unsuccessful, you need to add postgresql to the path manually')
         else:
             print('🛑 Unknown exception caught:')
-            print('You may need to restart Balsam server on terminal')
+            print('Could be postgres version mismatch.')
+            print('You may need to restart the Balsam server on terminal')
             print(e,'\n')
+    return
+
+def i_activate_database():
+    """
+    Selects Balsam database by setting the index of BALSAM_DB_PATH environment variable
+    from the dropdown list.
+    """
+    from ipywidgets import interact_manual, fixed
+    databasepaths = get_databases()
+    im = interact_manual(activate_database,db=[(i,db) for i,db in enumerate(databasepaths)],
+                        verbose=fixed(True))
+    mybutton = im.widget.children[1]
+    mybutton.description = 'activate database'   
+    return
+
+def get_apps(verbose=True):
+    """
+    Return apps in the balsam database. If verbose, print.
+    """
+    from balsam.core.models import ApplicationDefinition as App
+    from balsam.scripts import postgres_control
+    import os
+    try:
+        apps = App.objects.all()
+        if verbose:
+            print(f'Found {len(apps)} apps in {os.environ["BALSAM_DB_PATH"]}:')
+            for i,app in enumerate(apps):
+                print(f'{i}: {app.name}')
+        return apps
+    except Exception as e:
+        activate_database(db=os.environ["BALSAM_DB_PATH"])
         return None
     
-def i_show_apps():
+def i_list_apps():
     """
     Show apps saved in the Balsam database
     """
     import os
     from ipywidgets import widgets, Layout
     from IPython.display import display, clear_output
+    apps = get_apps()
     children = [widgets.Textarea(value=str(app), layout=Layout(flex= '1 1 auto', width='400px',height='200px')) 
                         for app in apps]
     tab = widgets.Accordion(children=children,layout=Layout(flex= '1 1 auto', width='500px',height='auto'))
@@ -148,7 +185,8 @@ def save_app(name, executable, description='', envscript='', preprocess='', post
     name: str, name of the app
     executable: str, path to the executable
     description: str, info about the app
-    preprocess: str, path to the preprocessing script
+    envscript:str, path to a bash script that can be `source`d
+    preprocess: str, path to the preprocessing script or command to be executed
     postprocess: str, path to the postprocessing script
     """
     from balsam.core.models import ApplicationDefinition as App
@@ -177,6 +215,8 @@ def save_app(name, executable, description='', envscript='', preprocess='', post
 def i_save_app():
     """
     Adds a new app to the balsam database with the given properties to the balsam database.
+    TODO: Add a file selection widget for envscript. 
+    See https://github.com/jupyter-widgets/ipywidgets/issues/2190
     """
     from ipywidgets import interact_manual
     import os
@@ -232,6 +272,11 @@ def save_job(name, workflow, application, description='',
             cpu_affinity='depth', data={}, environ_vars=''):
     """
     Adds and returns a new job with the given properties
+    Parameters
+    ----------
+    args: str, appended to the command
+    data: Python dict or list, Needs to be JSON serializable
+    environ_vars: str, colon (':') seperated key=val pairs
     """
     from balsam.launcher.dag import BalsamJob
     from balsam.core.models import ApplicationDefinition as App
@@ -507,9 +552,8 @@ def i_delete_jobs():
     ilist.on_click(list_clicked)
     return
 
-def submit_jobs(project='',queue='debug-cache-quad',nodes=1,
-           wall_minutes=30,job_mode='mpi',wf_filter='',
-           save=False,submit=False):
+def submit_jobs(project='', queue='debug-cache-quad', nodes=1, wall_minutes=30,
+                job_mode='mpi', wf_filter='', save=False, submit=False):
     """
     Submits a job to the queue with the given parameters.
     Parameters
