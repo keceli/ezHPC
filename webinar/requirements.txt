@@ -1,2 +1,2 @@
-jupyter
+jupyterlab>4.0
 jupyterlab_rise
